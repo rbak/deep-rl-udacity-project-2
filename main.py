@@ -65,7 +65,7 @@ def _get_env_file(single=False, crawler=False):
 
 
 def _setup_experiment(disabled=False):
-    experiment = Experiment(api_key='', project_name="udacity-deeprl-project-2", log_code=False,
+    experiment = Experiment(project_name="udacity-deeprl-project-2", log_code=False,
                             log_env_details=False, disabled=disabled)
     return experiment
 
@@ -127,7 +127,7 @@ def train(env, experiment, max_episodes=1000):
             while True:
                 rewards, done = agent.collect_trajectories()
                 rewards_total += rewards
-                agent.clipped_surrogate_update()
+                agent.update()
                 if done:
                     break
             # Track rewards

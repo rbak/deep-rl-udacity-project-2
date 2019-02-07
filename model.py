@@ -28,13 +28,12 @@ class ActorCritic(nn.Module):
             nn.Linear(hidden_size_2, num_outputs),
             nn.Tanh()
         )
+        self.actor.apply(init_weights)
 
         self.critic = nn.Linear(hidden_size_2, 1)
+        self.critic.apply(init_weights)
 
         self.std = nn.Parameter(torch.zeros(num_outputs))
-
-        self.actor.apply(init_weights)
-        self.critic.apply(init_weights)
 
     def forward(self, x):
         x = torch.FloatTensor(x)
