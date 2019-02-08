@@ -8,21 +8,18 @@ import numpy as np
 import torch
 
 hyper_params = {
-    'memory_size': 20000,   # replay buffer size
-    'batch_size': 64,          # minibatch size
-    'gae_tau': 0.95,
-    'ppo_ratio_clip': 0.2,
-    'entropy_weight': 0,
-    'optimization_epochs': 10,
-    'discount_rate': .99,
-    'traj_coll_random_steps': 3,
-    'value_pred_loss_coefficient': 0.5,
-    'clip_param': 0.2,
-    'beta': 0.001,
-    'tmax': 1000,
-    'num_epochs': 10,
-    'curation_percentile': 0,
-    'gradient_clip': 5,
+    'memory_size': 20000,      # replay buffer size
+    'batch_size': 64,          # sample batch size
+    't_random': 3,             # random steps at start of trajectory
+    't_max': 1000,             # trajectory length
+    'num_epochs': 10,          # number of updates
+    'c_vf': 0.5,               # coefficent for vf loss (c1)
+    'c_entropy': 0.001,        # starting value for coefficent for entropy (c2)
+    'epsilon': 0.2,            # starting value for clipping parameter
+    'gae_param': 0.95,         # gae param (λ)
+    'discount': .99,           # discount (γ)
+    'curation_percentile': 0,  # percent of trajectory data to drop
+    'gradient_clip': 5,        # gradient clip
 }
 
 env_files = {

@@ -1,33 +1,29 @@
 # Project 2 Report
 
 ## Algorithm
-The learning algorithm is a PPO actor-critic.
+The learning algorithm is a PPO actor-critic with a clipping surrogate function and gae.
 
 ## Hyperparameters
-I initially implemented DDPG for this project, but could not get it to perform well regardless of the hyperparameters I used.  As a result, when I got an implementation of PPO working, I didn't mess with the hyperparameters much as I didn't want to break the model. As far as I could tell my model learned to get a near perfect score, however I would like to go back and play with the hyperparameters to see if I could influence the initial learning rate.
+Most of the hyperparameter values I used came from the original PPO paper. (https://arxiv.org/abs/1707.06347)
 
-  * (memory_size): 20000
-  * (batch_size): 64
-  * (gae_tau): 0.95
-  * (ppo_ratio_clip): 0.2
-  * (entropy_weight): 0
-  * (optimization_epochs): 10
-  * (discount_rate): .99
-  * (traj_coll_random_steps): 3
-  * (value_pred_loss_coefficient): 0.5
-  * (clip_param): 0.2
-  * (beta): 0.001
-  * (tmax): 1000
-  * (num_epochs): 10
-  * (curation_percentile): 0
-  * (gradient_clip): 5
+  * memory_size: 20000,      # replay buffer size
+  * batch_size: 64,          # sample batch size
+  * t_random: 3,             # random steps at start of trajectory
+  * t_max: 1000,             # trajectory length
+  * num_epochs: 10,          # number of updates
+  * c_vf: 0.5,               # coefficent for vf loss (c1)
+  * c_entropy: 0.001,        # starting value for coefficent for entropy (c2)
+  * epsilon: 0.2,            # starting value for clipping parameter
+  * gae_param: 0.95,         # gae param (λ)
+  * discount: .99,           # discount (γ)
+  * curation_percentile: 0,  # percent of trajectory data to drop
+  * gradient_clip: 5,        # gradient clip
 
 ## Model Architecture
 The model architecture is a combined actor-critic with two hidden layers, both of size 64.
 
 ## Rewards
-Reward summary for the chosen model, trained over 2000 episodes.
-The agent required only about 120-130 episodes to consistently perform better than the goal.
+With multiple agents, only about 120-130 episodes were required to consistently perform better than the goal.
 
 ![Final Results](https://github.com/rbak/deep-reinforcement-learning-project-2/blob/master/results/final.jpeg)
 

@@ -1,5 +1,6 @@
 #  The udacity training materials, https://github.com/ShangtongZhang, and https://github.com/martinenzinger
 #  were used as reference for the PPO algorithm.
+#  For reference, PPO is defined in this paper: https://arxiv.org/abs/1707.06347
 
 import numpy as np
 from collections import deque
@@ -23,8 +24,8 @@ class Agent():
 
         # Starting Values
         self.states = env.info.vector_observations
-        self.clip_param = hyper_params['clip_param']
-        self.beta = hyper_params['beta']
+        self.epsilon = hyper_params['epsilon']
+        self.c_entropy = hyper_params['c_entropy']
 
     def collect_trajectories(self):
         done = False
@@ -37,15 +38,15 @@ class Agent():
         value_list = []
 
         # Random steps to start
-        if self.hyper_params['traj_coll_random_steps'] > 0:
-            for _ in range(self.hyper_params['traj_coll_random_steps']):
+        if self.hyper_params['t_random'] > 0:
+            for _ in range(self.hyper_params['t_random']):
                 actions = np.random.randn(self.num_agents, self.action_size)
                 actions = np.clip(actions, -1, 1)
                 env_info = self.env.step(actions)
                 states = env_info.vector_observations
 
         # Finish trajectory using policy
-        for t in range(self.hyper_params['tmax']):
+        for t in range(self.hyper_params['t_max']):
             states = torch.FloatTensor(states).to(self.device)
             dist, values = self.policy(states)
             actions = dist.sample()
@@ -80,9 +81,9 @@ class Agent():
 
         advantages = torch.FloatTensor(np.zeros((self.num_agents, 1)))
         for i in reversed(range(len(state_list))):
-            returns = reward_arr[i] + self.hyper_params['discount_rate'] * returns
-            td_error = reward_arr[i] + self.hyper_params['discount_rate'] * next_value - value_arr[i]
-            advantages = advantages * self.hyper_params['gae_tau'] * self.hyper_params['discount_rate'] + td_error
+            returns = reward_arr[i] + self.hyper_params['discount'] * returns
+            td_error = reward_arr[i] + self.hyper_params['discount'] * next_value - value_arr[i]
+            advantages = advantages * self.hyper_params['gae_param'] * self.hyper_params['discount'] + td_error
             next_value = value_arr[i]
             advantage_list.insert(0, advantages.detach())
             return_list.insert(0, returns.detach())
@@ -128,29 +129,32 @@ class Agent():
 
                 log_probs_new = dist.log_prob(actions_sample.to(self.device)).sum(-1).unsqueeze(-1)
                 entropy = dist.entropy().sum(-1).unsqueeze(-1).mean()
-                value_function_loss = (returns_sample - values).pow(2).mean()
+                vf_loss = (returns_sample - values).pow(2).mean()
 
                 ratio = (log_probs_new - log_probs_old_sample).exp()
-                clipped_ratio = torch.clamp(ratio, 1 - self.clip_param, 1 + self.clip_param)
-                clipped_surrogate_loss = -torch.min(ratio * advantages_sample, clipped_ratio * advantages_sample).mean()
-                loss = clipped_surrogate_loss - self.beta * entropy + self.hyper_params['value_pred_loss_coefficient']\
-                    * value_function_loss
+                clipped_ratio = torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon)
+                # Loss is negative for ascent.
+                # clipped_surrogate_loss = -torch.min(ratio * advantages_sample, clipped_ratio * advantages_sample).mean()
+                # loss = clipped_surrogate_loss - self.c_entropy * entropy + self.hyper_params['c_vf'] * vf_loss
+                clipped_surrogate_loss = torch.min(ratio * advantages_sample, clipped_ratio * advantages_sample).mean()
+                loss = -(clipped_surrogate_loss - (self.hyper_params['c_vf'] * vf_loss) + (self.c_entropy * entropy))
 
                 self.opt.zero_grad()
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.policy.parameters(), self.hyper_params['gradient_clip'])
                 self.opt.step()
 
-        # Reduce clipping and exploration
-        self.clip_param *= .999
-        self.beta *= .995
+        # Reduce clipping range to create smaller changes in policy over time
+        self.epsilon *= .999
+        # Reduce entropy coeffiecient to reduce entropy/exploration
+        self.c_entropy *= .995
 
 
 class Memory:
-    def __init__(self, size, mini_batch_size):
+    def __init__(self, size, batch_size):
         self.keys = ['advantages', 'states', 'log_probs_old', 'returns', 'actions']
         self.size = size
-        self.mini_batch_size = mini_batch_size
+        self.batch_size = batch_size
         self.reset()
 
     def add(self, data):
@@ -168,5 +172,5 @@ class Memory:
 
     def sample(self):
         batch_indices = np.random.permutation(len(getattr(self, self.keys[0])))[:len(getattr(
-            self, self.keys[0])) // self.mini_batch_size * self.mini_batch_size].reshape(-1, self.mini_batch_size)
+            self, self.keys[0])) // self.batch_size * self.batch_size].reshape(-1, self.batch_size)
         return batch_indices
