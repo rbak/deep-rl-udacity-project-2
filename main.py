@@ -27,14 +27,12 @@ env_files = {
         'single': 'Reacher.app',
         'multi': 'Multiagent_Reacher.app'
     },
-    'crawler': {
-        'Crawler.app'
-    }
+    'crawler': 'Crawler.app'
 }
 
 
 def main(args):
-    env_file = _get_env_file(args.single)
+    env_file = _get_env_file(args.single, args.crawler)
     if args.examine:
         with Environment(file_name=env_file, no_graphics=True) as env:
             examine(env)
@@ -44,7 +42,11 @@ def main(args):
     if args.train:
         with Environment(file_name=env_file, no_graphics=True) as env:
             experiment = _setup_experiment(disabled=(not args.log))
-            train(env, experiment)
+            if experiment:
+                with experiment.train():
+                    train(env, experiment)
+            else:
+                train(env, experiment)
     if args.test:
         with Environment(file_name=env_file, no_graphics=False) as env:
             test(env)
@@ -62,8 +64,11 @@ def _get_env_file(single=False, crawler=False):
 
 
 def _setup_experiment(disabled=False):
-    experiment = Experiment(project_name="udacity-deeprl-project-2", log_code=False,
-                            log_env_details=False, disabled=disabled)
+    try:
+        experiment = Experiment(project_name="udacity-deeprl-project-2", log_code=False,
+                                log_env_details=False, disabled=disabled)
+    except:
+        experiment = None
     return experiment
 
 
@@ -114,32 +119,32 @@ def test(env):
     print('\rRewards: ', rewards)
 
 
-def train(env, experiment, max_episodes=1000):
+def train(env, experiment=None, max_episodes=1000):
     agent = Agent(env, hyper_params)
     rewards_window = [deque(maxlen=100) for n in range(env.num_agents)]
-    with experiment.train():
-        for i_episode in range(1, max_episodes + 1):
-            env.reset(train_mode=True)
-            rewards_total = 0
-            while True:
-                rewards, done = agent.collect_trajectories()
-                rewards_total += rewards
-                agent.update()
-                if done:
-                    break
-            # Track rewards
-            for i, udr in enumerate(rewards_total):
-                rewards_window[i].append(udr)
-            experiment.log_metric('reward', np.mean(rewards_total), step=i_episode)
-            print('\rEpisode {}\tAverage Reward: {:.2f}'.format(i_episode, np.mean(rewards_total)), end="")
-            if i_episode % 100 == 0:
-                print('\rEpisode {}\tAverage Reward: {:.2f}'.format(i_episode, np.mean(rewards_total)))
-            mean_window_rewards = np.mean(rewards_window, axis=1)
-            if (mean_window_rewards >= 30.0).all():
-                print('\nEnvironment solved in {:d} episodes.  Average agent rewards: '
-                      .format(i_episode), mean_window_rewards)
-                torch.save(agent.policy.state_dict(), 'results/checkpoint.pth')
+    for i_episode in range(1, max_episodes + 1):
+        env.reset(train_mode=True)
+        rewards_total = 0
+        while True:
+            rewards, done = agent.collect_trajectories()
+            rewards_total += rewards
+            agent.update()
+            if done:
                 break
+        # Track rewards
+        for i, udr in enumerate(rewards_total):
+            rewards_window[i].append(udr)
+        if experiment:
+            experiment.log_metric('reward', np.mean(rewards_total), step=i_episode)
+        print('\rEpisode {}\tAverage Reward: {:.2f}'.format(i_episode, np.mean(rewards_total)), end="")
+        if i_episode % 100 == 0:
+            print('\rEpisode {}\tAverage Reward: {:.2f}'.format(i_episode, np.mean(rewards_total)))
+        mean_window_rewards = np.mean(rewards_window, axis=1)
+        if (mean_window_rewards >= 30.0).all():
+            print('\nEnvironment solved in {:d} episodes.  Average agent rewards: '
+                  .format(i_episode), mean_window_rewards)
+            torch.save(agent.policy.state_dict(), 'results/checkpoint.pth')
+            break
 
 
 if __name__ == "__main__":
@@ -168,6 +173,10 @@ if __name__ == "__main__":
                         action="store_true",
                         dest="single",
                         help='Run the single agent version of the environment')
+    parser.add_argument('--crawler',
+                        action="store_true",
+                        dest="crawler",
+                        help='Run the crawler environment')
     args = parser.parse_args()
     if not any(vars(args).values()):
         parser.error('No arguments provided.')
