@@ -67,7 +67,8 @@ def _setup_experiment(disabled=False):
     try:
         experiment = Experiment(project_name="udacity-deeprl-project-2", log_code=False,
                                 log_env_details=False, disabled=disabled)
-    except:
+    except Exception as e:  # Even when disabled, the comet library will throw an exception if the key is not set.
+        print(e)
         experiment = None
     return experiment
 

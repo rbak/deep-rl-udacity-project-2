@@ -32,5 +32,6 @@ e.g. `python main.py --test`
 
 Rather than the standard matplotlib plots from my last project, I set this one up to push the results to comet.ml
 If you want to see a graph of the results from training, you can setup an account there and use the following flag.
+The most recent runs can be found here: (https://www.comet.ml/rbak/udacity-deeprl-project-2)
 
 * `--log`: Logs the results to comet.ml.  Must have set the environment variable COMET_API_KEY.
