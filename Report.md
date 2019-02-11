@@ -33,4 +33,4 @@ Over multiple runs the agent varied in how quickly it learned the model, but con
 
 
 ## Future Improvements
-Although they are not strictly improvements to my implementation, I would be interested in trying some of the other actor critic algorithms to see how they compare.  I initially implemented DDPG for this project but was unable to get it working, so I would like to revisit that, as well as implementing A3C and potentially the Q-prop algorithm that was mentioned, but not covered.
+Although they are not strictly improvements to my implementation, I would be interested in trying some of the other algorithms to see how they compare.  I initially implemented DDPG for this project but was unable to get it working, so I would like to revisit that, as well as implementing A3C and potentially the Q-prop algorithm that was mentioned, but not covered.  I would also like to get the single agent version of the evironment working, as none of the algorithms I tried on that environment learned.
